@@ -18,8 +18,8 @@ param (
     [string]$multiHome = "" ,               # Only use if you need to specify your private server IP
     $wipeFrequency = "",                    # Frequency to wipe in days (IE 30 for 30-day wipe period)
     $enableWipe = "",                       # Pass this to turn on auto wiping
-	$isDedi = "true",			            # Set this to true if it is a dedi server like ovh. 
-	$trunkServerName = "",  	            # Truncated Server name for save directory. Keep it simple
+    $isDedi = "true",			    # Set this to true if it is a dedi server like ovh. 
+    $trunkServerName = "",  	            # Truncated Server name for save directory. Keep it simple
     $steamcmdFolder = "C:\scripts\steamcmd" # SteamCMD Folder, used for updating!
 )
 
