@@ -631,22 +631,41 @@ function CheckUpdate {
         if ($installedVersion -ne $availableVersion) {
             Write-Host "Update Available"
             Write-Host "Installed build: $installedVersion - available build: $availableVersion"
-
+            # Grab the PID Files
+            $pidFiles = Get-ChildItem $pidPath
+            if (!($pidFiles.Count -le 1)) {
+                # Lets check to see if servers are running
+                $serverCheck = $false
+                Foreach ($item in $pidFiles) {
+                    $appPID = Get-Content $item.FullName
+                    Try {
+                        Get-Process -id $appPID -ErrorAction Stop
+                        $serverCheck = $true
+                    } Catch {
+                        # Server not running
+                        Continue
+                    }
+                }
+            }
+            
             # Shutdown the servers! This Section is custom to MythOfEmpires
             # we have no known way to send broadcast AFAIK so RIP
-            ShutDownCluster -serverConfig $serverConfig -pidPath $pidPath
+            if ($serverCheck) {
+                ShutDownCluster -serverConfig $serverConfig -pidPath $pidPath
+            }
 			# Lets give it enough time to finish everything properly
             Start-Sleep -s 15
             # Make sure everything is offline.
             # Kinda redundant since we are blowing up the PIDs 
-            $pidFiles = Get-ChildItem $pidPath 
-            Foreach ($item in $pidFiles) {
-                $serverPID = Get-Content $item.FullName
-                While (Get-Process -id $serverPID -ErrorAction SilentlyContinue) {
-                    Write-Host "Waiting for $serverPID to shutdown...."
-                    Start-Sleep -s 3
+            if (!($pidFiles.Count -le 1)) {
+                Foreach ($item in $pidFiles) {
+                    $serverPID = Get-Content $item.FullName
+                    While (Get-Process -id $serverPID -ErrorAction SilentlyContinue) {
+                        Write-Host "Waiting for $serverPID to shutdown...."
+                        Start-Sleep -s 3
+                    }
+                    Get-Process -id $serverPID -ErrorAction SilentlyContinue | Stop-Process 
                 }
-                Get-Process -id $serverPID -ErrorAction SilentlyContinue | Stop-Process 
             }
 			# Lets Boogie! 
             Write-host "Starting Update....This could take a few minutes..."
