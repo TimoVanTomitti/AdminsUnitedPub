@@ -184,8 +184,7 @@ function StartCluster {
     "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
     "-ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + ` 
     "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-    "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" -MaxPlayers=100 -NoticeSelfEnable=true " + ` 
-    "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" " + `
+    "-MaxPlayers=100 -NoticeSelfEnable=true " + ` 
     "-MapDifficultyRate=1 -UseACE -EnableVACBan=1"
     # Start the Pub Server Control
     $serverCheck = $null
@@ -276,8 +275,8 @@ function StartCluster {
     "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
     "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
     "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-    "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" -MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -NoticeSelfEnable=true " + `
-    "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" -MapDifficultyRate=1 -UseACE -EnableVACBan=1"
+    "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -NoticeSelfEnable=true " + `
+    "-MapDifficultyRate=1 -UseACE -EnableVACBan=1"
 
     if ($($serverConfig["LobbyServerInfo"]["LobbyPassword"])) {
         $lobbyArgumentLine += " -PrivateServerPassword=$($serverConfig["LobbyServerInfo"]["LobbyPassword"])"
