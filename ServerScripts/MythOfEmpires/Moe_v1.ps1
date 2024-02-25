@@ -562,9 +562,17 @@ function StartCluster {
             "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
             "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
             "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-            "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" -MaxPlayers=$($sceneServer["SceneMaxPlayers"]) -NoticeSelfEnable=true " + `
-            "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" -MapDifficultyRate=$($serverConfig["BaseServerConfig"]["MapDifficultyRate"]) -UseACE -EnableVACBan=1 "
-
+            "-MaxPlayers=$($sceneServer["SceneMaxPlayers"]) -NoticeSelfEnable=true " + `
+            "-MapDifficultyRate=$($serverConfig["BaseServerConfig"]["MapDifficultyRate"]) -UseACE -EnableVACBan=1 "
+            # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
+            # as the Enter Server notice. So we are just going to do a fun check now. 
+            if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
+                $gridArgumentLine += "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
+            }
+            # Same thing for Description
+            if ($($serverConfig["BaseServerConfig"]["Description"])) {
+                $gridArgumentLine += "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
+            }
             # Append generalized arguments
             $gridArgumentLine += $generalizedArguments
 
