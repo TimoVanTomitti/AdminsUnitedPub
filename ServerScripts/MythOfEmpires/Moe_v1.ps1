@@ -184,8 +184,13 @@ function StartCluster {
     "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
     "-ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + ` 
     "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-    "-MaxPlayers=100 -NoticeSelfEnable=true " + ` 
+    "-MaxPlayers=100 " + ` 
     "-MapDifficultyRate=1 -UseACE -EnableVACBan=1"
+    
+    if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnable"]) -eq "1") {
+        # Notifications Enabled
+        $pubServerArgumentLine += " -NoticeSelfEnable=true"
+    }
     # Start the Pub Server Control
     $serverCheck = $null
     $pubAppID = $null
@@ -275,9 +280,13 @@ function StartCluster {
     "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
     "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
     "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-    "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -NoticeSelfEnable=true " + `
+    "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) " + `
     "-MapDifficultyRate=1 -UseACE -EnableVACBan=1"
 
+    if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnable"]) -eq "1") {
+        # Notifications Enabled
+        $lobbyArgumentLine += " -NoticeSelfEnable=true"
+    }
     if ($($serverConfig["LobbyServerInfo"]["LobbyPassword"])) {
         $lobbyArgumentLine += " -PrivateServerPassword=$($serverConfig["LobbyServerInfo"]["LobbyPassword"])"
     }
@@ -561,8 +570,13 @@ function StartCluster {
             "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
             "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
             "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-            "-MaxPlayers=$($sceneServer["SceneMaxPlayers"]) -NoticeSelfEnable=true " + `
+            "-MaxPlayers=$($sceneServer["SceneMaxPlayers"]) " + `
             "-MapDifficultyRate=$($serverConfig["BaseServerConfig"]["MapDifficultyRate"]) -UseACE -EnableVACBan=1 "
+            
+            if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnable"]) -eq "1") {
+                # Notifications Enabled
+                $gridArgumentLine += " -NoticeSelfEnable=true"
+            }
             # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
             # as the Enter Server notice. So we are just going to do a fun check now. 
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
