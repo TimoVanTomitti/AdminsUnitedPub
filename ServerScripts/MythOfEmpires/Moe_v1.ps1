@@ -13,6 +13,7 @@ Param (
     $serverPath = "",       # Path to your server install (Whatever your used for SteamCMD) Ex. C:\servers\moe
     $steamCMDPath = "",     # Path to SteamCMD; Ex. C:\scripts\steamcmd
     $rconPath = "",         # This is for RCON automation. Ex C:\scripts\mcrcon\mcrcon.exe
+    $scriptPath = "",       # This is where you plan to put your script. its a fallback incase something breaks. 
     $privateIP = "",        # This is your private ip. Use IPCONFIG to get
     $publicIP = "",         # This is your Public IP, Use IPCHICKEN.COM
     $clusterID = 8888,      # Leave this as default. Only change if you are running multiple clusters.
@@ -166,7 +167,47 @@ function ShutdownCluster {
 # Function to start the entire cluster
 # super crazy
 function StartCluster {
-    param($gamePath,$chatPath,$optPath,$serverConfig,$pidPath)
+    param($gamePath,$chatPath,$optPath,$serverConfig,$pidPath,$scriptPath,$serverPath)
+
+    # Lets clean up the log files, there's too many of them:
+    # There's 2 logging directories. Until we can figure out what the logging argument is for chat server/opt server
+    # Logging Directory #1 -> <Path_to_this_script>\chat_logs & logs
+    # Logging Directory #2 -> <Path_to_server>\MOE\Saved\Logs
+    # We are going to keep the last 2 log files on restart
+    Write-Host "Cleaning Log files"
+    If ($scriptPath) {
+        $chatLogPath = Join-Path $scriptPath "chat_logs"
+        $optLogPath = Join-Path $scriptPath "logs"
+        # Delete chat logs except last 2
+        $chatLogs = GCI -Path $chatLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
+        Foreach ($log in $chatLogs) {
+            Remove-Item -Path $log.FullName -Force
+        }
+        # Delete OPT Logs except last 2
+        $optLogs = GCI -Path $optLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
+        Foreach ($log in $optLogs) {
+            Remove-Item -Path $log.FullName -Force
+        }
+    }
+    # Now we will clean up the server log directory
+    $serverLogPath = Join-Path $serverPath "MOE\Saved\Logs"
+    $allLogs = Get-ChildItem -Path $serverLogPath -File
+    # regex to group logs based on their IDs.
+    $groupedLogs = $allLogs | Group-Object -Property {
+        if ($_.Name -match '^(.+?_\d+)') {
+            return $matches[1]
+        } else {
+            # In case the log has no ID
+            $_.Name -match '^(.*?)[_\.]' | Out-Null; $matches[1]
+        }
+    }
+    Foreach ($group in $groupedLogs) {
+        $sortedLogs = $group.Group | Sort-Object LastWriteTime -Descending
+        $logsToDelete = $sortedLogs | Select-Object -Skip 2
+        Foreach ($log in $logsToDelete) {
+            Remove-Item -path $log.FullName -Force
+        }
+    }
     # Step 1 - Launch Database Servers
     ## Public Data Server
     # Build Argument Line for PubServer
@@ -706,9 +747,19 @@ function CheckUpdate {
     } 
 } # End Check Update Function
 
+If (!($PSScriptRoot)) {
+    # If for some reason the environment variable PSSCriptROot is not working
+    
+}
+
 Switch ($option) {
     "StartCluster" {
-        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath
+        If (!($PSScriptRoot)) {
+            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+        } Else {
+            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+        }
+        
         break # Lol
     }
     "ShutdownCluster" {
@@ -717,7 +768,11 @@ Switch ($option) {
     }
     "RestartCluster" {
         ShutdownCluster -serverConfig $serverConfig -pidPath $pidPath
-        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath
+        If (!($PSScriptRoot)) {
+            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+        } Else {
+            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+        }
         break
     }
     "UpdateCluster" {
@@ -725,7 +780,11 @@ Switch ($option) {
         Start-Sleep -s 5
         # We should be ok to start the cluster, since we are saving and checking PIDs, if there's no update
         # then the servers will still be running therefore the PIDs will be true and not execute!
-        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath
+        If (!($PSScriptRoot)) {
+            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+        } Else {
+            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+        }
         break
     }
     "Help" {
