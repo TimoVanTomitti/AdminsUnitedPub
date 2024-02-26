@@ -186,7 +186,7 @@ function StartCluster {
     "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
     "-MaxPlayers=100 " + ` 
     "-MapDifficultyRate=1 -UseACE -EnableVACBan=1"
-    
+
     if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnable"]) -eq "1") {
         # Notifications Enabled
         $pubServerArgumentLine += " -NoticeSelfEnable=true"
@@ -363,7 +363,6 @@ function StartCluster {
     -MaxActiveStructureCountConfig=$($serverConfig["BaseServerConfig"]["MaxActiveStructureCountConfig"]) `
     -NormalReduceDurableMultiplier=$($serverConfig["BaseServerConfig"]["NormalReduceDurableMultiplier"]) `
     -SleepPlayerCharacterDestroyDays=$($serverConfig["BaseServerConfig"]["SleepPlayerCharacterDestroyDays"]) `
-    -bEnableServerLevel=$($serverConfig["BaseServerConfig"]["bEnableServerLevel"]) `
     -ServerLevelAddMul=$($serverConfig["BaseServerConfig"]["ServerLevelAddMul"]) `
     -FoodBuffValueMulti=$($serverConfig["BaseServerConfig"]["FoodBuffValueMulti"]) `
     -MedicineBuffValueMulti=$($serverConfig["BaseServerConfig"]["MedicineBuffValueMulti"]) `
@@ -573,6 +572,10 @@ function StartCluster {
             "-MaxPlayers=$($sceneServer["SceneMaxPlayers"]) " + `
             "-MapDifficultyRate=$($serverConfig["BaseServerConfig"]["MapDifficultyRate"]) -UseACE -EnableVACBan=1 "
             
+            if ($($serverConfig["BaseServerConfig"]["bEnableServerLevel"]) -eq "0") {
+                # Disable bEnableServerLevel
+                $gridArgumentLine += " -bEnableServerLevel=false"
+            }
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnable"]) -eq "1") {
                 # Notifications Enabled
                 $gridArgumentLine += " -NoticeSelfEnable=true"
