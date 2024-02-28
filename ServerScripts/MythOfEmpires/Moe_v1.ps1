@@ -179,35 +179,43 @@ function StartCluster {
         $chatLogPath = Join-Path $scriptPath "chat_logs"
         $optLogPath = Join-Path $scriptPath "logs"
         # Delete chat logs except last 2
-        $chatLogs = GCI -Path $chatLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
-        Foreach ($log in $chatLogs) {
-            Remove-Item -Path $log.FullName -Force
+        if (Test-Path $chatLogs) {
+            $chatLogs = GCI -Path $chatLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
+            Foreach ($log in $chatLogs) {
+                Remove-Item -Path $log.FullName -Force
+            }
         }
+        
         # Delete OPT Logs except last 2
-        $optLogs = GCI -Path $optLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
-        Foreach ($log in $optLogs) {
-            Remove-Item -Path $log.FullName -Force
+        if (Test-Path $optLogs) {
+            $optLogs = GCI -Path $optLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
+            Foreach ($log in $optLogs) {
+                Remove-Item -Path $log.FullName -Force
+            }
         }
     }
     # Now we will clean up the server log directory
     $serverLogPath = Join-Path $serverPath "MOE\Saved\Logs"
-    $allLogs = Get-ChildItem -Path $serverLogPath -File
-    # regex to group logs based on their IDs.
-    $groupedLogs = $allLogs | Group-Object -Property {
-        if ($_.Name -match '^(.+?_\d+)') {
-            return $matches[1]
-        } else {
-            # In case the log has no ID
-            $_.Name -match '^(.*?)[_\.]' | Out-Null; $matches[1]
+    if (Test-Path $serverLogPath) {
+        $allLogs = Get-ChildItem -Path $serverLogPath -File
+        # regex to group logs based on their IDs.
+        $groupedLogs = $allLogs | Group-Object -Property {
+            if ($_.Name -match '^(.+?_\d+)') {
+                return $matches[1]
+            } else {
+                # In case the log has no ID
+                $_.Name -match '^(.*?)[_\.]' | Out-Null; $matches[1]
+            }
+        }
+        Foreach ($group in $groupedLogs) {
+            $sortedLogs = $group.Group | Sort-Object LastWriteTime -Descending
+            $logsToDelete = $sortedLogs | Select-Object -Skip 2
+            Foreach ($log in $logsToDelete) {
+                Remove-Item -path $log.FullName -Force
+            }
         }
     }
-    Foreach ($group in $groupedLogs) {
-        $sortedLogs = $group.Group | Sort-Object LastWriteTime -Descending
-        $logsToDelete = $sortedLogs | Select-Object -Skip 2
-        Foreach ($log in $logsToDelete) {
-            Remove-Item -path $log.FullName -Force
-        }
-    }
+    
     # Step 1 - Launch Database Servers
     ## Public Data Server
     # Build Argument Line for PubServer
