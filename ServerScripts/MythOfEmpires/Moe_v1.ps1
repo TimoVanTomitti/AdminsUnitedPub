@@ -283,9 +283,9 @@ function StartCluster {
     $optArgumentLine = "-b=true " + `
     "-LogLevel=1 " + `
     "-GatewayAddr=$($privateIP):$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
-    "-RankClientAddr=$($publicIP):$($serverConfig["AroundServerInfo"]["RankListPort"]) " + `
-    "-GlobalRankClientAddr=$($publicIP):$($serverConfig["AroundServerInfo"]["GlobalRankListPort"]) " + `
-    "-MarketClientAddr=$($publicIP):$($serverConfig["AroundServerInfo"]["MarketPort"]) " + `
+    "-RankClientAddr=$($privateIP):$($serverConfig["AroundServerInfo"]["RankListPort"]) " + `
+    "-GlobalRankClientAddr=$($privateIP):$($serverConfig["AroundServerInfo"]["GlobalRankListPort"]) " + `
+    "-MarketClientAddr=$($privateIP):$($serverConfig["AroundServerInfo"]["MarketPort"]) " + `
     "-RedisURL=$($serverConfig["AroundServerInfo"]["RedisAddr"]):$($serverConfig["AroundServerInfo"]["RedisPort"])"
 
     if ($enableMySQL -like "true") {
