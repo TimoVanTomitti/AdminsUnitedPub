@@ -179,7 +179,7 @@ function StartCluster {
         $chatLogPath = Join-Path $scriptPath "chat_logs"
         $optLogPath = Join-Path $scriptPath "logs"
         # Delete chat logs except last 2
-        if (Test-Path $chatLogs) {
+        if (Test-Path $chatLogPath) {
             $chatLogs = GCI -Path $chatLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
             Foreach ($log in $chatLogs) {
                 Remove-Item -Path $log.FullName -Force
@@ -187,7 +187,7 @@ function StartCluster {
         }
         
         # Delete OPT Logs except last 2
-        if (Test-Path $optLogs) {
+        if (Test-Path $optLogPath) {
             $optLogs = GCI -Path $optLogPath -File | Sort-Object -Property LastWriteTime -Descending | Select-OBject -Skip 2
             Foreach ($log in $optLogs) {
                 Remove-Item -Path $log.FullName -Force
@@ -746,10 +746,14 @@ function CheckUpdate {
             $availableVersion | Out-File $latestInstalledUpdate
             Write-Host "Update Done!"
             Remove-Item $updateinprogress -Force
+            $updated = $true
+            return $updated
         } Else {
             Write-Host 'No Update Available!'
 			if (Test-Path $updateinprogress) {
+                $updated = $false
 				Remove-Item $updateinprogress -Force
+                return $updated
 			}
         }
     } 
@@ -784,16 +788,18 @@ Switch ($option) {
         break
     }
     "UpdateCluster" {
-        CheckUpdate -serverPath $serverPath -steamcmdFolder $steamCMDPath -pidPath $pidPath -serverConfig $serverConfig
+        $updated = CheckUpdate -serverPath $serverPath -steamcmdFolder $steamCMDPath -pidPath $pidPath -serverConfig $serverConfig
         Start-Sleep -s 5
         # We should be ok to start the cluster, since we are saving and checking PIDs, if there's no update
         # then the servers will still be running therefore the PIDs will be true and not execute!
-        If (!($PSScriptRoot)) {
-            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
-        } Else {
-            StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+        if ($updated -like "*True*") {
+            If (!($PSScriptRoot)) {
+                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+            } Else {
+                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+            }
+            break
         }
-        break
     }
     "Help" {
         $helpText = @"
