@@ -6,22 +6,78 @@
 # This Script requires you to use the MatrixServerTool to generate the ServerParamConfig_All.ini
 # This script requires you to copy the MatrixServerTool folder to your dedicated server to your server path
 # This Script requires you to copy the ServerParamConfig_All.ini file to a folder called "configs" under your server path!
+# This script now has the ability to send messages to discord. It will require a discord bot using Express to listen on localhost. Here is the code I used:
+<# 
+#### DISCORD EXPRESS LISTENER ####
+// Define the HTTP endpoint for sending messages
+app.post('/send-message', async (req, res) => {
+    const { channelId, message, secret } = req.body;
+
+    if (secret !== 'SECRET_SQUIRREL') { // Replace SECRET_SQUIRREL with your actual secret key
+        return res.status(401).send('Unauthorized');
+    }
+
+    try {
+        const channel = await client.channels.fetch(channelId);
+        await channel.send(message);
+        res.status(200).send('Message sent successfully');
+    } catch (error) {
+        console.error('Error sending message:', error);
+        res.status(500).send('Failed to send message');
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Bot web server running at http://localhost:${port}`);
+});
+#>
+
+
 # Do not edit anything in this script unless you know what you are doing, any customizations will not be supported unless I like you or you buy me cookies
 
 # EDIT THESE BELOW #
 Param (
-    $serverPath = "",       # Path to your server install (Whatever your used for SteamCMD) Ex. C:\servers\moe
-    $steamCMDPath = "",     # Path to SteamCMD; Ex. C:\scripts\steamcmd
-    $rconPath = "",         # This is for RCON automation. Ex C:\scripts\mcrcon\mcrcon.exe
-    $scriptPath = "",       # This is where you plan to put your script. its a fallback incase something breaks. 
-    $privateIP = "",        # This is your private ip. Use IPCONFIG to get
-    $publicIP = "",         # This is your Public IP, Use IPCHICKEN.COM
-    $clusterID = 8888,      # Leave this as default. Only change if you are running multiple clusters.
-    $option = "",           # StartCluster, StopCluster,RestartCluster,UpdateCluster,Help
-    $enableMySQL = "true"   # Turn on MYSQL Access -> Do this is you used MariaDB
+    $serverPath = "",           # Path to your server install (Whatever your used for SteamCMD) Ex. C:\servers\moe
+    $steamCMDPath = "",         # Path to SteamCMD; Ex. C:\scripts\steamcmd
+    $rconPath = "",             # This is for RCON automation. Ex C:\scripts\mcrcon\mcrcon.exe
+    $scriptPath = "",           # This is where you plan to put your script. its a fallback incase something breaks. 
+    $privateIP = "",            # This is your private ip. Use IPCONFIG to get
+    $publicIP = "",             # This is your Public IP, Use IPCHICKEN.COM
+    $clusterID = 8888,          # Leave this as default. Only change if you are running multiple clusters.
+    $option = "",               # StartCluster, StopCluster,RestartCluster,UpdateCluster,Help
+    $enableMySQL = "true",      # Turn on MYSQL Access -> Do this is you used MariaDB
+    $enableDiscord = "false",   # Turn on Discord Functions. See Requirements at top
+    $discordSecret = "",        # Required for Discord Functions
+    $autoprocess = "true",      # Enables loop for auto-restarts and updates
+    $restartTime = "8"          # Time in Hours to reboot the server.
 )
 ## EDIT NOTHING FURTHER ##
 
+# Function for sending message to discord
+# this requires you to be hosting a discord bot 
+# that uses express to listen on 3000 at /send-message
+function messageDiscord {
+    param($channelId,$message,$secret)
+
+    if (!($channelId)) {
+        # If you dont pass a channel ID
+        # use the below as default
+        $channelId = "1210025251996704809"
+    }
+    if (!($secret)) {
+        # Unable to send message
+        Write-Host "No Secret passed cannot send"
+    } Else {
+        $uri = 'http://localhost:3000/send-message'
+        $body = @{
+            channelId = $($channelId)
+            message = $($message)
+            secret = $($secret)
+        } | ConvertTo-Json
+
+        Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json"
+    }
+}
 
 ## Function to parse INI Configs ##
 function Parse-IniFile {
@@ -704,6 +760,10 @@ function CheckUpdate {
         if ($installedVersion -ne $availableVersion) {
             Write-Host "Update Available"
             Write-Host "Installed build: $installedVersion - available build: $availableVersion"
+            if ($enableDiscord -eq "true") {
+                messageDiscord -message "MoE Cluster rebooting for update in 5 minutes." -secret $discordSecret
+                Start-Sleep -s 500
+            }
             # Grab the PID Files
             $pidFiles = Get-ChildItem $pidPath
             if (!($pidFiles.Count -le 1)) {
@@ -817,3 +877,91 @@ Switch ($option) {
         Write-Host "Valid Options are: StartCluster, ShutdownCluster, RestartCluster, UpdateCluster or Help"
     }
 } # End Switch Statement
+
+function ReportTime {
+    param (
+        [DateTime]$rebootTime,
+        [DateTime]$updateCheckTime
+    )
+    Write-Host "Next Reboot Time: $($rebootTime)"
+    Write-Host "Next Update Check Time: $($updateCheckTime)"
+}
+# This is the auto-process loop. 
+# This loop will continue to run until you close it
+# it will automatically reboot the server on a set schedule based on
+# the value in $restartTime in hours
+# This loop will also automatically check for updates every 30 minutes
+if ($autoprocess -eq "true") {
+    # Initial setup
+    $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
+    $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
+    $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+    $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+    ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+    $warningSent = $false
+
+    do {
+        $currentDate = Get-Date
+        $warningTime = $rebootTime.AddMinutes(-5)
+
+        # Check if it's time to send the pre-reboot warning
+        if ($currentDate -ge $warningTime -and $currentDate -lt $rebootTime -and -not $warningSent) {
+            if ($enableDiscord -eq "true") {
+                # Send a pre-reboot warning to Discord
+                messageDiscord -message "MoE Cluster rebooting in 5 minutes." -secret $discordSecret
+                $warningSent = $true
+            }
+            
+        }
+
+        # Check for reboot time
+        if ($currentDate -gt $rebootTime) {
+            if ($enabledDiscord -eq "true") { 
+                messageDiscord -message "MoE Cluster is rebooting now!" -secret $discordSecret
+            }
+            # Time to Reboot the cluster!
+            ShutdownCluster -serverConfig $serverConfig -pidPath $pidPath
+
+            # Running the startCluster function twice because lobby server keeps crashing
+            # this is temporary till i have time to find a solution
+            if (-not $PSScriptRoot) {
+                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+                Start-Sleep -s 30
+                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+            } else {
+                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+                Start-Sleep -s 30
+                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+            }
+
+            # Reset the reboot timer
+            $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
+            $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+            ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+            $warningSent = $false
+        }
+
+        # Check for update time
+        if ($currentDate -gt $updateCheckTime) {
+            $updated = CheckUpdate -serverPath $serverPath -steamcmdFolder $steamCMDPath -pidPath $pidPath -serverConfig $serverConfig
+
+            Start-Sleep -Seconds 5
+
+            if ($updated -like "*True*") {
+                if (-not $PSScriptRoot) {
+                    StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+                    Start-Sleep -s 30
+                    StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+                } else {
+                    StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+                    Start-Sleep -s 30
+                    StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+                }
+            }
+            # Reset update check time
+            $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
+            $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+            ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+        }        
+    } while ($true)
+}
