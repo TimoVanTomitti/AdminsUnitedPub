@@ -982,7 +982,13 @@ if ($autoprocess -eq "true") {
             }
             # Time to Reboot the cluster!
             ShutdownCluster -serverConfig $serverConfig -pidPath $pidPath
-
+            # Reload the Server Config
+            Try {
+                $serverConfig = Parse-IniFile -FilePath $ServerIni
+            } Catch {
+                Write-Error "Failed to Parse INI File $serverIni `r`n $($_.Server.Exception)"
+                Exit 1
+            }
             # Running the startCluster function twice because lobby server keeps crashing
             # this is temporary till i have time to find a solution
             if (-not $PSScriptRoot) {
@@ -1009,6 +1015,13 @@ if ($autoprocess -eq "true") {
             Start-Sleep -Seconds 5
 
             if ($updated -like "*True*") {
+                # Reload the Server Config
+                Try {
+                    $serverConfig = Parse-IniFile -FilePath $ServerIni
+                } Catch {
+                    Write-Error "Failed to Parse INI File $serverIni `r`n $($_.Server.Exception)"
+                    Exit 1
+                }
                 if (-not $PSScriptRoot) {
                     StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
                     Start-Sleep -s 30
