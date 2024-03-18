@@ -717,7 +717,64 @@ function StartCluster {
             Start-Sleep -s 10
         }
     }
-    # Loop through Battlefield Servers TO DO
+    # Loop through Battlefield Servers
+    Foreach ($key in $serverConfig.Keys) {
+        if ($key -match "^BattleServerList_\d+$") {
+            # BAttlefield Argument List
+            $battleServer = $serverConfig[$key]
+            $battleMap = $($battleServer["BattleMap"] -replace '^\d+_', '')
+            $battlefieldArgumentLine = "$($battlemap) -game -server -ClusterId=$($clusterID) -DataStore " + `
+            "-log -StartBattleService -StartPubData -BigPrivateServer -DistrictId=1 -EnableParallelTickFunction -DisablePhysXSimulation " + `
+            "-LOCALLOGTIMES -corelimit=5 -core -HangDuration=300 -NotCheckServerSteamAuth " + `
+            "-MultiHome=$($battleServer["BattleInnerAddr"]) -OutAddress=$($battleServer["BattleOuterAddr"]) -Port=$($battleServer["BattleGamePort"]) " + `
+            "-QueryPort=$($battleServer["BattleQueryPort"]) -ShutDownServicePort=$($battleServer["BattleClosePort"]) -ShutDownServiceIP=$($battleServer["BattleRemoteAddr"]) -ShutDownServiceKey=$($battleServer["BattleRemotePassword"]) " + `
+            "-MaxPlayers=$($battleServer["BattleMaxPlayers"]) -SessionName=battlefield_$($battleServer["BattleID"]) -ServerId=$($battleServer["BattleID"]) log=BattleServer_$($battleServer["BattleID"]).log " + `
+            "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) -DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + `
+            "-BattleAddr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -BattlePort=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + `
+            "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
+            "-ChatClientAddress=$($serverConfig["AroundServerInfo"]["ChatClientAddr"]) -ChatClientPort=$($serverConfig["AroundServerInfo"]["ChatClientPort"]) " + `
+            "-OptEnable=1 -OptAddr=$($serverConfig["AroundServerInfo"]["OptToolAddr"]) -OptPort=$($serverConfig["AroundServerInfo"]["GatewayPort"]) " + `
+            "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" -NoticeSelfEnable=$($serverConfig["BaseServerConfig"]["NoticeSelfEnable"]) " + `
+            "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" -MapDifficultyRate=$($serverConfig["BaseServerConfig"]["MapDifficultyRate"]) " + `
+            "-UseACE=$($serverConfig["BaseServerConfig"]["UseACE"]) -EnableVACBan=$($serverConfig["BaseServerConfig"]["EnableVACBan"]) " + `
+            "-bUseServerAdmin=$($serverConfig["BaseServerConfig"]["bUseServerAdmin"]) -ServerAdminAccounts=$($serverConfig["BaseServerConfig"]["ServerAdminAccounts"]) " + ` 
+            "-NoticeAllEnable=$($serverConfig["BaseServerConfig"]["NoticeAllEnable"]) -MoveSeatLoadMultiplier=$($serverConfig["BaseServerConfig"]["MoveSeatLoadMultiplier"]) " + `
+            "-TameAnimalLoadMultiplier=$($serverConfig["BaseServerConfig"]["TameAnimalLoadMultiplier"]) -NUM_AllHorseMax=$($serverConfig["BaseServerConfig"]["NUM_AllHorseMax"]) " + `
+            "-ServerGeneralCharAddExpMultiplier=$($serverConfig["BaseServerConfig"]["ServerGeneralCharAddExpMultiplier"]) " + `
+            "-ServerAnimalCharAddExpMultiplier=$($serverConfig["BaseServerConfig"]["ServerAnimalCharAddExpMultiplier"]) " + `
+            "-CharacterCorpseLifespan=$($serverConfig["BaseServerConfig"]["CharacterCorpseLifespan"]) -PlayerRespawnCantBeDamageTime=$($serverConfig["BaseServerConfig"]["PlayerRespawnCantBeDamageTime"]) " + `
+            "-CropCollectMultiplier=$($serverConfig["BaseServerConfig"]["CropCollectMultiplier"]) -CapitalDropRatioPVP=$($serverConfig["BaseServerConfig"]["CapitalDropRatioPVP"]) " + `
+            "-CapitalDropRatioPVE=$($serverConfig["BaseServerConfig"]["CapitalDropRatioPVE"]) -PersonalOreFactoryMul=$($serverConfig["BaseServerConfig"]["PersonalOreFactoryMul"]) " + `
+            "-ServerPlayerCharAddExpMultiplier=$($serverConfig["BaseServerConfig"]["ServerPlayerCharAddExpMultiplier"]) " + ` 
+            "-PlayerLoadMultiplier=$($serverConfig["BaseServerConfig"]["PlayerLoadMultiplier"]) -AnimalFarmDropMul=$($serverConfig["BaseServerConfig"]["AnimalFarmDropMul"]) " + `
+            "-ExpToGuildActivityPointMul=$($serverConfig["BaseServerConfig"]["ExpToGuildActivityPointMul"]) -MaxGuildActivityPointMul=$($serverConfig["BaseServerConfig"]["MaxGuildActivityPointMul"]) " + `
+            "-GuildRenameCDHour=$($serverConfig["BaseServerConfig"]["GuildRenameCDHour"]) -PVEOnlySelfGuildPickUpDeathPackage=$($serverConfig["BaseServerConfig"]["PVEOnlySelfGuildPickUpDeathPackage"])"
+            # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
+            # as the Enter Server notice. So we are just going to do a fun check now. 
+            if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
+                $battlefieldArgumentLine += "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
+            }
+            # Same thing for Description
+            if ($($serverConfig["BaseServerConfig"]["Description"])) {
+                $battlefieldArgumentLine += "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
+            }
+            
+            $serverCheck = $null
+            $battlefieldPIDPath = Join-Path $pidPath "bf-$($battleServer["BattleID"]).pid"
+            if (Test-Path $battlefieldPIDPath) {
+                $battlefieldAppID = Get-Content $battlefieldPIDPath
+                Try {
+                    Write-Host "Checking $($battlefieldPIDPath)"
+                    $serverCheck = Get-Process -id $battlefieldAppID -ErrorAction Stop
+                } Catch {
+                    StartServer $gamePath $battlefieldArgumentLIne $battlefieldPIDPath
+                }
+            } Else {
+                # PID Doesn't exist so just start it
+                StartServer $gamePath $battlefieldArgumentLIne $battlefieldPIDPath
+            }
+        }
+    }
 } # End Start Cluster -> What a doozy whew
 
 function CheckUpdate {
