@@ -395,6 +395,10 @@ function StartCluster {
     if ($($serverConfig["LobbyServerInfo"]["LobbyPassword"])) {
         $lobbyArgumentLine += " -PrivateServerPassword=$($serverConfig["LobbyServerInfo"]["LobbyPassword"])"
     }
+    # Same thing for Description
+    if ($($serverConfig["BaseServerConfig"]["Description"])) {
+        $lobbyArgumentLine += "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
+    }
 
     if ($enableMySQL -like "true") {
         $lobbyArgumentLine += " -mmo_storeserver_type=Mysql " + ` 
@@ -688,11 +692,11 @@ function StartCluster {
             # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
             # as the Enter Server notice. So we are just going to do a fun check now. 
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
-                $gridArgumentLine += "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
+                $gridArgumentLine += " -NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
             }
             # Same thing for Description
             if ($($serverConfig["BaseServerConfig"]["Description"])) {
-                $gridArgumentLine += "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
+                $gridArgumentLine += " -Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
             }
             # Append generalized arguments
             $gridArgumentLine += $generalizedArguments
