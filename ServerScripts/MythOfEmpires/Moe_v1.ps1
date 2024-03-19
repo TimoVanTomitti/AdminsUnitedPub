@@ -689,6 +689,10 @@ function StartCluster {
                 # Notifications Enabled
                 $gridArgumentLine += " -NoticeSelfEnable=true"
             }
+            # Enter/Exit Server notifications:
+            if ($($serverConfig["BaseServerConfig"]["NoticeAllEnable"]) -eq "1") {
+                $gridArgumentLine += " -NoticeAllEnable=true"
+            }
             # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
             # as the Enter Server notice. So we are just going to do a fun check now. 
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
