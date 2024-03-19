@@ -49,7 +49,11 @@ Param (
     $enableDiscord = "false",   # Turn on Discord Functions. See Requirements at top
     $discordSecret = "",        # Required for Discord Functions
     $autoprocess = "true",      # Enables loop for auto-restarts and updates
-    $restartTime = "8"          # Time in Hours to reboot the server.
+    $restartTime = "8",         # Time in Hours to reboot the server.
+    ## BANNING PARAMETERS
+    $steamID = "",
+    $timeSpan = "",
+    $banreason = ""
 )
 ## EDIT NOTHING FURTHER ##
 
@@ -280,7 +284,7 @@ function StartCluster {
     "-BigPrivateServer -DistrictId=1 -LOCALLOGTIMES -NetServerMaxTickRate=1000 -HangDuration=300 -core " + `
     "-NotCheckServerSteamAuth -MultiHome=$($privateIP) -OutAddress=$($publicIP) -Port=$($serverConfig["PubDataServerInfo"]["PubDataGamePort"]) " + `
     "-QueryPort=$($serverConfig["PubDataServerInfo"]["PubDataQueryPort"]) -ShutDownServicePort=$($serverConfig["PubDataServerInfo"]["PubDataClosePort"]) " + `
-    "-ShutDownServiceIP=$($serverConfig["PubDataServerInfo"]["PubDataRemoteAddr"]) -ShutDownServiceKey=$($rconPass) " + ` 
+    "-ShutDownServiceIP=$($serverConfig["PubDataServerInfo"]["PubDataRemoteAddr"]) -ShutDownServiceKey=$($serverConfig["PubDataServerInfo"]["PubDataRemotePassword"]) " + ` 
     "-SessionName=PubDataServer_90000 -ServerId=$($serverConfig["PubDataServerInfo"]["PubDataServerID"]) log=PubDataServer_90000.log " + `
     "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) " + ` 
     "-DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + ` 
@@ -375,7 +379,7 @@ function StartCluster {
     "-LobbyPort=$($serverConfig["LobbyServerInfo"]["LobbyPort"]) -MultiHome=$($privateIP) " + `
     "-OutAddress=$($publicIP) -Port=$($serverConfig["LobbyServerInfo"]["LobbyGamePort"]) -QueryPort=$($serverConfig["LobbyServerInfo"]["LobbyQueryPort"]) " + `
     "-ShutDownServicePort=$($serverConfig["LobbyServerInfo"]["LobbyClosePort"]) -ShutDownServiceIP=$($serverConfig["LobbyServerInfo"]["LobbyRemoteAddr"]) " + `
-    "-ShutDownServiceKey=$($rconPass) -MaxPlayers=$($serverConfig["LobbyServerInfo"]["LobbyMaxPlayers"]) " + `
+    "-ShutDownServiceKey=$($serverConfig["LobbyServerInfo"]["LobbyRemotePassword"]) -MaxPlayers=$($serverConfig["LobbyServerInfo"]["LobbyMaxPlayers"]) " + `
     "-mmo_storeserver_addr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -mmo_storeserver_port=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + `
     "-mmo_battlemanagerserver_addr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -mmo_battlemanagerserver_port=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + `
     "-SessionName=`"$($serverConfig["LobbyServerInfo"]["ServerListName"])`" -ServerId=$($serverConfig["LobbyServerInfo"]["LobbyServerID"]) log=LobbyServer_$($serverConfig["LobbyServerInfo"]["LobbyServerID"]).log " + `
@@ -884,6 +888,130 @@ function CheckUpdate {
     } 
 } # End Check Update Function
 
+function moe-readBans {
+    param($serverConfig) 
+
+    $dllPath = "C:\scripts\ExternalUtilities\MySql.Data.dll"
+    # Assuming $dllPath exists and is correctly set up as in previous function
+
+    # Import the DLL
+    Add-Type -Path $dllPath
+
+    # Setup the MySQL Connection
+    $ConnectionString = "server=localhost;" +
+                        "port=3306;" + # Specify the port number here
+                        "user=$($serverConfig["DatabaseConfig"]["PublicDatabaseUserName"]);" +
+                        "password=$($serverConfig["DatabaseConfig"]["PublicDatabasePassword"]);" +
+                        "database=moe_banlist"
+
+    $Connection = New-Object MySql.Data.MySqlClient.MySqlConnection
+    $Connection.ConnectionString = $ConnectionString
+    $Connection.Open()
+
+    try {
+        # Select all from the moe_banlist table
+        $sql = "SELECT steamid, UnbanTime FROM moe_banlist"
+        $cmd = New-Object MySql.Data.MySqlClient.MySqlCommand($sql, $Connection)
+        $reader = $cmd.ExecuteReader()
+        while ($reader.Read()) {
+            $steamID = $reader["steamid"]
+            $unbanTimeStr = $reader["UnbanTime"]
+            $currentTime = Get-Date
+
+            if ($currentTime -gt $unbanTime) {
+                # Unban time has passed, delete the entry and run the unban command
+                $reader.Close()
+                $sqlDelete = "DELETE FROM moe_banlist WHERE steamid = '$steamID'"
+                $cmdDelete = New-Object MySql.Data.MySqlClient.MySqlCommand($sqlDelete, $Connection)
+                $cmdDelete.ExecuteNonQuery()
+
+                # Run the unban command
+                Write-Host "Unbanning $steamID"
+                rcon -p $($serverConfig["LobbyServerInfo"]["LobbyRemotePassword"]) -P $($serverConfig["LobbyServerInfo"]["LobbyClosePort"]) -H $($serverConfig["LobbyServerInfo"]["LobbyRemoteAddr"]) -s "PrivateServerRemoveBlockList $steamID"
+                # Now run it across all scene servers
+                Foreach ($key in $serverConfig.Keys) {
+                    if ($key -match "^SceneServerList_\d+$") {
+                        $sceneServer = $serverConfig[$key]
+                        rcon -p $($sceneServer["SceneRemotePassword"]) -P $($sceneServer["SceneClosePort"]) -H $($sceneServer["SceneRemoteAddr"]) -s "PrivateServerRemoveBlockList $steamID"
+                    }
+                }
+                $reader = $cmd.ExecuteReader() # Re-open reader for remaining rows
+            } else {
+                # Unban time has not passed, execute the ban command
+                Write-Host "Banning $steamID"
+                rcon -p $($serverConfig["LobbyServerInfo"]["LobbyRemotePassword"]) -P $($serverConfig["LobbyServerInfo"]["LobbyClosePort"]) -H $($serverConfig["LobbyServerInfo"]["LobbyRemoteAddr"]) -s "PrivateServerAddBlockList $steamID"
+                # Now run it across all scene servers
+                Foreach ($key in $serverConfig.Keys) {
+                    if ($key -match "^SceneServerList_\d+$") {
+                        $sceneServer = $serverConfig[$key]
+                        rcon -p $($sceneServer["SceneRemotePassword"]) -P $($sceneServer["SceneClosePort"]) -H $($sceneServer["SceneRemoteAddr"]) -s "PrivateServerAddBlockList $steamID"
+                    }
+                }
+            }
+        }
+    } finally {
+        $Connection.Close()
+    }
+}
+
+function moe-addBan {
+    param($steamID,$timeSpan,$reason,$serverConfig) 
+
+    $dllPath = "C:\scripts\ExternalUtilities\MySql.Data.dll"
+    if (-not (Test-Path $dllPath)) {
+        Write-Host "MySql.Data.dll is missing!! Please review the instructions at the top of this script!"
+        Exit 1
+    }
+    # Import the MySql.Data.dll
+    Add-Type -Path $dllPath
+    $ConnectionString = "server=$($serverConfig["DatabaseConfig"]["PublicDatabaseAddr"]);" +
+                        "port=$($serverConfig["DatabaseConfig"]["PublicDatabasePort"]);" +
+                        "user=$($serverConfig["DatabaseConfig"]["PublicDatabaseUserName"]);" +
+                        "password=$($serverConfig["DatabaseConfig"]["PublicDatabasePassword"]);" +
+                        "database=moe_banlist"
+    $Connection = New-Object MySql.Data.MySqlClient.MySqlConnection
+    $Connection.ConnectionString = $ConnectionString
+    $Connection.Open()
+
+    try {
+        # Check if the moe_banlist table exists, if not, create it
+        $sql = "CREATE TABLE IF NOT EXISTS moe_banlist (
+                    steamid VARCHAR(128), 
+                    TimeOfBan DATETIME, 
+                    UnbanTime DATETIME, 
+                    Reason VARCHAR(256), 
+                    IsBanned BOOL
+                )"
+        $cmd = New-Object MySql.Data.MySqlClient.MySqlCommand($sql, $Connection)
+        $cmd.ExecuteNonQuery()
+
+        # Check if the $steamID already exists in the table
+        $sql = "SELECT UnbanTime FROM moe_banlist WHERE steamid = '$steamID'"
+        $cmd = New-Object MySql.Data.MySqlClient.MySqlCommand($sql, $Connection)
+        $reader = $cmd.ExecuteReader()
+
+        if ($reader.Read()) {
+            $unbanTime = $reader["UnbanTime"]
+            Write-Host "SteamID $steamID already exists in the table. Auto-unban time: $unbanTime"
+        } else {
+            $reader.Close()
+            # $steamID does not exist, add it to the table
+            $currentTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+            $unbanTime = (Get-Date).AddMinutes($timeSpan).ToString("yyyy-MM-dd HH:mm:ss")
+            Write-Host $unbanTime
+            $sql = "INSERT INTO moe_banlist (steamid, TimeOfBan, UnbanTime, Reason, IsBanned) VALUES ('$steamID', '$currentTime', '$unbanTime', '$reason', 1)"
+            $cmd = New-Object MySql.Data.MySqlClient.MySqlCommand($sql, $Connection)
+            $cmd.ExecuteNonQuery()
+            Write-Host "SteamID $steamID added to the ban list with auto-unban time: $unbanTime"
+        }
+    } finally {
+        $Connection.Close()
+    }
+    moe-readBans -serverConfig $serverConfig
+}
+
+
+
 If (!($PSScriptRoot)) {
     # If for some reason the environment variable PSSCriptROot is not working
     
@@ -926,6 +1054,15 @@ Switch ($option) {
             break
         }
     }
+    "AddBan" {
+        if (!($steamID)) {
+            Write-host "Missing SteamID, Who to ban?!"
+            Exit 1
+        } Else {
+            moe-addBan -steamID $steamID -timespan $timeSpan -reason $banreason -serverConfig $serverConfig
+        }
+        Exit 0
+    }
     "Help" {
         $helpText = @"
         -----HELP MENU----
@@ -946,79 +1083,53 @@ Switch ($option) {
 function ReportTime {
     param (
         [DateTime]$rebootTime,
-        [DateTime]$updateCheckTime
+        [DateTime]$updateCheckTime,
+        [DateTime]$banCheckTime
     )
     Write-Host "Next Reboot Time: $($rebootTime)"
     Write-Host "Next Update Check Time: $($updateCheckTime)"
+    Write-Host "Next Ban Check Time: $($banCheckTime)"
 }
-# This is the auto-process loop. 
-# This loop will continue to run until you close it
-# it will automatically reboot the server on a set schedule based on
-# the value in $restartTime in hours
-# This loop will also automatically check for updates every 30 minutes
-if ($autoprocess -eq "true") {
-    # Initial setup
-    $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
-    $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
-    $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
-    $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
-    ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
-    $warningSent = $false
 
-    do {
-        $currentDate = Get-Date
-        $warningTime = $rebootTime.AddMinutes(-5)
+# We Don't want the auto process starting if you are using the script to add or remove a ban
+if (!($option -eq "*ban*")) {
+    # This is the auto-process loop. 
+    # This loop will continue to run until you close it
+    # it will automatically reboot the server on a set schedule based on
+    # the value in $restartTime in hours
+    # This loop will also automatically check for updates every 30 minutes
+    if ($autoprocess -eq "true") {
+        # Initial setup
+        $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
+        $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
+        $banCheckTimeString = (Get-Date).AddMinutes(10).ToString('MM/dd/yyyy HH:mm:ss')
+        $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+        $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+        $banCheckTime = [DateTime]::ParseExact($banCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+        ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime -banChecktime $banCheckTime
+        $warningSent = $false
 
-        # Check if it's time to send the pre-reboot warning
-        if ($currentDate -ge $warningTime -and $currentDate -lt $rebootTime -and -not $warningSent) {
-            if ($enableDiscord -eq "true") {
-                # Send a pre-reboot warning to Discord
-                messageDiscord -message "MoE Cluster rebooting in 5 minutes." -secret $discordSecret
-                $warningSent = $true
-            }
-            
-        }
+        do {
+            $currentDate = Get-Date
+            $warningTime = $rebootTime.AddMinutes(-5)
 
-        # Check for reboot time
-        if ($currentDate -gt $rebootTime) {
-            if ($enabledDiscord -eq "true") { 
-                messageDiscord -message "MoE Cluster is rebooting now!" -secret $discordSecret
-            }
-            # Time to Reboot the cluster!
-            ShutdownCluster -serverConfig $serverConfig -pidPath $pidPath
-            # Reload the Server Config
-            Try {
-                $serverConfig = Parse-IniFile -FilePath $ServerIni
-            } Catch {
-                Write-Error "Failed to Parse INI File $serverIni `r`n $($_.Server.Exception)"
-                Exit 1
-            }
-            # Running the startCluster function twice because lobby server keeps crashing
-            # this is temporary till i have time to find a solution
-            if (-not $PSScriptRoot) {
-                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
-                Start-Sleep -s 30
-                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
-            } else {
-                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
-                Start-Sleep -s 30
-                StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+            # Check if it's time to send the pre-reboot warning
+            if ($currentDate -ge $warningTime -and $currentDate -lt $rebootTime -and -not $warningSent) {
+                if ($enableDiscord -eq "true") {
+                    # Send a pre-reboot warning to Discord
+                    messageDiscord -message "MoE Cluster rebooting in 5 minutes." -secret $discordSecret
+                    $warningSent = $true
+                }
+                
             }
 
-            # Reset the reboot timer
-            $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
-            $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
-            ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
-            $warningSent = $false
-        }
-
-        # Check for update time
-        if ($currentDate -gt $updateCheckTime) {
-            $updated = CheckUpdate -serverPath $serverPath -steamcmdFolder $steamCMDPath -pidPath $pidPath -serverConfig $serverConfig
-
-            Start-Sleep -Seconds 5
-
-            if ($updated -like "*True*") {
+            # Check for reboot time
+            if ($currentDate -gt $rebootTime) {
+                if ($enabledDiscord -eq "true") { 
+                    messageDiscord -message "MoE Cluster is rebooting now!" -secret $discordSecret
+                }
+                # Time to Reboot the cluster!
+                ShutdownCluster -serverConfig $serverConfig -pidPath $pidPath
                 # Reload the Server Config
                 Try {
                     $serverConfig = Parse-IniFile -FilePath $ServerIni
@@ -1026,6 +1137,8 @@ if ($autoprocess -eq "true") {
                     Write-Error "Failed to Parse INI File $serverIni `r`n $($_.Server.Exception)"
                     Exit 1
                 }
+                # Running the startCluster function twice because lobby server keeps crashing
+                # this is temporary till i have time to find a solution
                 if (-not $PSScriptRoot) {
                     StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
                     Start-Sleep -s 30
@@ -1035,11 +1148,52 @@ if ($autoprocess -eq "true") {
                     Start-Sleep -s 30
                     StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
                 }
+
+                # Reset the reboot timer
+                $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
+                $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+                $warningSent = $false
             }
-            # Reset update check time
-            $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
-            $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
-            ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
-        }        
-    } while ($true)
+
+            # Check for update time
+            if ($currentDate -gt $updateCheckTime) {
+                $updated = CheckUpdate -serverPath $serverPath -steamcmdFolder $steamCMDPath -pidPath $pidPath -serverConfig $serverConfig
+
+                Start-Sleep -Seconds 5
+
+                if ($updated -like "*True*") {
+                    # Reload the Server Config
+                    Try {
+                        $serverConfig = Parse-IniFile -FilePath $ServerIni
+                    } Catch {
+                        Write-Error "Failed to Parse INI File $serverIni `r`n $($_.Server.Exception)"
+                        Exit 1
+                    }
+                    if (-not $PSScriptRoot) {
+                        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+                        Start-Sleep -s 30
+                        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+                    } else {
+                        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+                        Start-Sleep -s 30
+                        StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+                    }
+                }
+                # Reset update check time
+                $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
+                $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+            }
+            # Check for Bans
+            if ($currentDate -gt $banCheckTime) {
+                # Execute ban/unban process
+                moe-readBans -serverConfig $serverConfig
+                # Reset ban check time
+                $banCheckTimeString = (Get-Date).AddMinutes(10).ToString('MM/dd/yyyy HH:mm:ss')
+                $banCheckTime = [DateTime]::ParseExact($banCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
+                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime -banChecktime $banCheckTime
+            }        
+        } while ($true)
+    }
 }
