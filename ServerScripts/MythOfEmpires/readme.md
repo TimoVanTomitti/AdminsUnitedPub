@@ -1,6 +1,8 @@
 # Myth of Empires Server Management Script
 
-This PowerShell script, created by Icewarden for the Admins United: Myth of Empires Community, offers a robust set of features for managing Myth of Empires game servers. It facilitates easy server startup, maintenance, and communication through Discord integration.
+This PowerShell script, created by Icewarden for the Admins United: Myth of Empires Community, offers a robust set of features for managing Myth of Empires game servers. It facilitates easy server startup, maintenance, and communication through Discord integration. 
+
+If there are any non-functional arguments or if something isn't quite working right, please inform IceWarden on Discord for quickest response time.
 
 ## Features
 
@@ -23,6 +25,7 @@ This PowerShell script, created by Icewarden for the Admins United: Myth of Empi
 1. **MatrixServerTool Configuration**: Ensure the MatrixServerTool is correctly set up as per the game server's documentation.
 2. **Discord Bot Setup**: Create a Discord bot and set it up to listen on localhost for messages from the script.
 3. **MySQL Database**: Set up a MySQL database named `moe_banlist` for managing bans.
+4. **MySQL.Data.Dll**: Copy the DLL from the ExternalUtilities folder into `"C:\scripts\ExternalUtilities"`
 
 ## Usage
 
