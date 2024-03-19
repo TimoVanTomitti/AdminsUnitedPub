@@ -917,8 +917,8 @@ function moe-readBans {
     Add-Type -Path $dllPath
 
     # Setup the MySQL Connection
-    $ConnectionString = "server=localhost;" +
-                        "port=3306;" + # Specify the port number here
+    $ConnectionString = "server=$($serverConfig["DatabaseConfig"]["PublicDatabaseAddr"]);" +
+                        "port=$($serverConfig["DatabaseConfig"]["PublicDatabasePort"]);" +
                         "user=$($serverConfig["DatabaseConfig"]["PublicDatabaseUserName"]);" +
                         "password=$($serverConfig["DatabaseConfig"]["PublicDatabasePassword"]);" +
                         "database=moe_banlist"
