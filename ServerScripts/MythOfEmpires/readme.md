@@ -2,6 +2,9 @@
 
 This PowerShell script, created by Icewarden for the Admins United: Myth of Empires Community, offers a robust set of features for managing Myth of Empires game servers. It facilitates easy server startup, maintenance, and communication through Discord integration. 
 
+PLEASE READ AND FOLLOW THE INSTRUCTIONS ON THE CLUSTER SETUP GUIDE CLOSELY BEFORE ATTEMPTING TO RUN THIS SCRIPT
+[ClusterSetupGuide](https://steamcommunity.com/sharedfiles/filedetails/?id=3165697002)
+
 If there are any non-functional arguments or if something isn't quite working right, please inform IceWarden on Discord for quickest response time.
 
 ## Features
