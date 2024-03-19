@@ -6,7 +6,7 @@ PLEASE READ AND FOLLOW THE INSTRUCTIONS ON THE CLUSTER SETUP GUIDE CLOSELY BEFOR
 [ClusterSetupGuide](https://steamcommunity.com/sharedfiles/filedetails/?id=3165697002)
 
 If there is an argument missing, its most likely not included in the Server Tool. You'll need to add a new section in the ServerParamConfig_All.ini called ```[CustomServerConfig]```
-For example here are some known custom configs (Thanks to Loumie (@taychason) from the Admins United community for these!)
+For example here are some known custom configs (Thanks to Loumie [@taychason](https://github.com/taychason) from the Admins United community for these!)
 
 ```
 [CustomServerConfig]
