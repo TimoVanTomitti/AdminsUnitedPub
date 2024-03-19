@@ -5,7 +5,27 @@ This PowerShell script, created by Icewarden for the Admins United: Myth of Empi
 PLEASE READ AND FOLLOW THE INSTRUCTIONS ON THE CLUSTER SETUP GUIDE CLOSELY BEFORE ATTEMPTING TO RUN THIS SCRIPT
 [ClusterSetupGuide](https://steamcommunity.com/sharedfiles/filedetails/?id=3165697002)
 
-If there are any non-functional arguments or if something isn't quite working right, please inform IceWarden on Discord for quickest response time.
+If there is an argument missing, its most likely not included in the Server Tool. You'll need to add a new section in the ServerParamConfig_All.ini called ```[CustomServerConfig]```
+For example here are some known custom configs (Thanks to Loumie from the Admins United community for these!)
+
+```
+[CustomServerConfig]
+NpcSpawnIntervalMultiplier=1.0 #mob refresh rate. Lower number = faster respawn
+NpcStaticSpawnIntervalMultiplier=1.0 #NPC refresh rate
+TameAnimalPregnancySpeedMultiplier=1.0 #pregnancy speed. higher number = faster pregnancy
+XCJinPaiMemberCountLimit=1 #guild member requirement for county/prefecture battle
+FubenCoolDownMultiplier=1.0 #treasure map cooldown. Lower number = faster cooldown.
+bEnableConfigVariationChance=true #enables horse mutations
+SeasonHonorPoint=1
+# All have something to do with Server transfering
+TransportCDAddMulDiff=1
+TransportCDAddMul=1
+CrossServerCDTimeTaiShouDecDiff=1
+CrossServerNewPlayerCDTimeDiff=1
+CrossServerNewPlayerCDTime=1
+CrossServerCDTime=1
+CrossServerCDTimeDiff=1
+```
 
 ## Features
 
