@@ -397,7 +397,7 @@ function StartCluster {
     }
     # Same thing for Description
     if ($($serverConfig["BaseServerConfig"]["Description"])) {
-        $lobbyArgumentLine += "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
+        $lobbyArgumentLine += " -Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
     }
 
     if ($enableMySQL -like "true") {
