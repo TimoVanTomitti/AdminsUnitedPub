@@ -10,14 +10,14 @@ For example here are some known custom configs (Thanks to Loumie from the Admins
 
 ```
 [CustomServerConfig]
-NpcSpawnIntervalMultiplier=1.0 #mob refresh rate. Lower number = faster respawn
-NpcStaticSpawnIntervalMultiplier=1.0 #NPC refresh rate
-TameAnimalPregnancySpeedMultiplier=1.0 #pregnancy speed. higher number = faster pregnancy
-XCJinPaiMemberCountLimit=1 #guild member requirement for county/prefecture battle
-FubenCoolDownMultiplier=1.0 #treasure map cooldown. Lower number = faster cooldown.
-bEnableConfigVariationChance=true #enables horse mutations
-SeasonHonorPoint=1
-# All have something to do with Server transfering
+NpcSpawnIntervalMultiplier=1.0          ; mob refresh rate. Lower number = faster respawn
+NpcStaticSpawnIntervalMultiplier=1.0    ; NPC refresh rate
+TameAnimalPregnancySpeedMultiplier=1.0  ; pregnancy speed. higher number = faster pregnancy
+XCJinPaiMemberCountLimit=1              ; guild member requirement for county/prefecture battle
+FubenCoolDownMultiplier=1.0             ; treasure map cooldown. Lower number = faster cooldown.
+bEnableConfigVariationChance=true       ; enables horse mutations
+SeasonHonorPoint=1                      ; Has something to do with seasonal points we think
+; All have something to do with Server transfering
 TransportCDAddMulDiff=1
 TransportCDAddMul=1
 CrossServerCDTimeTaiShouDecDiff=1
