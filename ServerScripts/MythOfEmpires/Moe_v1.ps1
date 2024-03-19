@@ -51,9 +51,9 @@ Param (
     $autoprocess = "true",      # Enables loop for auto-restarts and updates
     $restartTime = "8",         # Time in Hours to reboot the server.
     ## BANNING PARAMETERS
-    $steamID = "",
-    $timeSpan = "",
-    $banreason = ""
+    $steamID = "",              # SteamID to Ban
+    $timeSpan = "",             # Time in Minutes to Ban for
+    $banreason = ""             # Reason for banning
 )
 ## EDIT NOTHING FURTHER ##
 
