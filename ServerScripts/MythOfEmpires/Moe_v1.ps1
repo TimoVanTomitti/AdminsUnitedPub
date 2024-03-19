@@ -662,6 +662,18 @@ function StartCluster {
     -OccupyDecayHPInOtherAreaMultiplier=$($serverConfig["BaseServerConfig"]["OccupyDecayHPInOtherAreaMultiplier"]) `
     -OccupyBaseStructureNum=$($serverConfig["BaseServerConfig"]["OccupyBaseStructureNum"])
 "@
+    # CUSTOM STUFF
+    # There appears to be some settings that are not in the server tools
+    # these settings will need to be added manually to [CustomServerConfig]
+    if ($serverConfig["CustomServerConfig"]) {
+    $customArguments = @"
+"@
+        Foreach ($key in $ServerConfig["CustomServerConfig"].Keys) {
+            $value = $serverConfig["CustomServerConfig"][$key]
+            $customArguments += "-$key=$value "
+        }
+    }
+
 
     # Loop through SCENE Servers
     Foreach ($key in $serverConfig.Keys) {
@@ -708,7 +720,10 @@ function StartCluster {
             }
             # Append generalized arguments
             $gridArgumentLine += $generalizedArguments
-
+            # Add Custom Arguments
+            if ($($serverConfig["CustomServerConfig"])) {
+                $gridArgumentLine += $customArguments
+            }
             # Determine if the server is PVP or PVE and append the appropriate arguments
             if ($($sceneServer["ScenePVPType"]) -eq "1") { # PVE
                 $gridArgumentLine += $pveArguments
