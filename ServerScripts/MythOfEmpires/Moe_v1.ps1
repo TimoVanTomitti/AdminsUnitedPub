@@ -892,7 +892,11 @@ function moe-readBans {
     param($serverConfig) 
 
     $dllPath = "C:\scripts\ExternalUtilities\MySql.Data.dll"
-    # Assuming $dllPath exists and is correctly set up as in previous function
+    if (!(test-path $dllPath)) {
+        # DLL missing
+        Write-HOst "MySQL.Data.DLL Missing, cant connect to database.."
+        return
+    }
 
     # Import the DLL
     Add-Type -Path $dllPath
@@ -909,6 +913,18 @@ function moe-readBans {
     $Connection.Open()
 
     try {
+        $sqlCheckTable = @"
+SELECT COUNT(*)
+FROM information_schema.tables 
+WHERE table_schema = 'moe_banlist' 
+AND table_name = 'moe_banlist';
+"@
+        $cmdCheckTable = New-Object MySql.Data.MySqlClient.MySqlCommand($sqlCheckTable, $Connection)
+        $tableExists = $cmdCheckTable.ExecuteScalar()
+        if ($tableExists -eq 0) {
+            Write-Host "Table moe_banlist does not exist. Skipping BanList Check. Please re-read documentation!"
+            return
+        }
         # Select all from the moe_banlist table
         $sql = "SELECT steamid, UnbanTime FROM moe_banlist"
         $cmd = New-Object MySql.Data.MySqlClient.MySqlCommand($sql, $Connection)
