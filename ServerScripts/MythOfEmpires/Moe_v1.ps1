@@ -44,7 +44,7 @@ Param (
     $privateIP = "",            # This is your private ip. Use IPCONFIG to get
     $publicIP = "",             # This is your Public IP, Use IPCHICKEN.COM
     $clusterID = 8888,          # Leave this as default. Only change if you are running multiple clusters.
-    $option = "",               # StartCluster, StopCluster,RestartCluster,UpdateCluster,Help
+    $option = "",               # StartCluster, ShutdownCluster,RestartCluster,UpdateCluster,Help
     $enableMySQL = "true",      # Turn on MYSQL Access -> Do this is you used MariaDB
     $enableDiscord = "false",   # Turn on Discord Functions. See Requirements at top
     $discordSecret = "",        # Required for Discord Functions
