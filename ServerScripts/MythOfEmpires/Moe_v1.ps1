@@ -951,7 +951,7 @@ AND table_name = 'moe_banlist';
             $unbanTimeStr = $reader["UnbanTime"]
             $currentTime = Get-Date
 
-            if ($currentTime -lt $unbanTime) {
+            if ($currentTime -gt $unbanTimeStr) {
                 # Unban time has passed, delete the entry and run the unban command
                 $reader.Close()
                 $sqlDelete = "DELETE FROM moe_banlist WHERE steamid = '$steamID'"
