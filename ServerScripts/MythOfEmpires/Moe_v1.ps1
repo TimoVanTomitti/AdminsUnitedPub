@@ -963,6 +963,7 @@ AND table_name = 'moe_banlist';
                 Foreach ($key in $serverConfig.Keys) {
                     if ($key -match "^SceneServerList_\d+$") {
                         $sceneServer = $serverConfig[$key]
+                        Write-Host "Unbanning $steamID on $($sceneServer["SceneID"])"
                         rcon -p $($sceneServer["SceneRemotePassword"]) -P $($sceneServer["SceneClosePort"]) -H $($sceneServer["SceneRemoteAddr"]) -s "PrivateServerRemoveBlockList $steamID"
                     }
                 }
@@ -975,6 +976,7 @@ AND table_name = 'moe_banlist';
                 Foreach ($key in $serverConfig.Keys) {
                     if ($key -match "^SceneServerList_\d+$") {
                         $sceneServer = $serverConfig[$key]
+                        Write-Host "Banning $steamID on $($sceneServer["SceneID"])"
                         rcon -p $($sceneServer["SceneRemotePassword"]) -P $($sceneServer["SceneClosePort"]) -H $($sceneServer["SceneRemoteAddr"]) -s "PrivateServerAddBlockList $steamID"
                     }
                 }
