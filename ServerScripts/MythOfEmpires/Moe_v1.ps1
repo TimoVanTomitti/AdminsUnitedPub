@@ -1054,8 +1054,10 @@ Switch ($option) {
     "StartCluster" {
         If (!($PSScriptRoot)) {
             StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+            moe-readBans -serverConfig $serverConfig
         } Else {
             StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+            moe-readBans -serverConfig $serverConfig
         }
         
         break # Lol
@@ -1081,8 +1083,10 @@ Switch ($option) {
         if ($updated -like "*True*") {
             If (!($PSScriptRoot)) {
                 StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $scriptPath -serverPath $serverPath
+                moe-readBans -serverConfig $serverConfig
             } Else {
                 StartCluster -gamePath $gamePath -chatPath $chatPath -optPath $optPath -serverConfig $serverConfig -pidPath $pidPath -scriptPath $PSScriptRoot -serverPath $serverPath
+                moe-readBans -serverConfig $serverConfig
             }
             break
         }
@@ -1185,7 +1189,7 @@ if (!($option -eq "*ban*")) {
                 # Reset the reboot timer
                 $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
                 $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
-                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime -banCheckTime $banCheckTime
                 $warningSent = $false
             }
 
@@ -1216,7 +1220,7 @@ if (!($option -eq "*ban*")) {
                 # Reset update check time
                 $updateCheckTimeString = (Get-Date).AddMinutes(30).ToString('MM/dd/yyyy HH:mm:ss')
                 $updateCheckTime = [DateTime]::ParseExact($updateCheckTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
-                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime
+                ReportTime -rebootTime $rebootTime -updateCheckTime $updateCheckTime -banCheckTime $banCheckTime
             }
             # Check for Bans
             if ($currentDate -gt $banCheckTime) {
