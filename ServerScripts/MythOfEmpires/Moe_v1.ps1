@@ -937,6 +937,8 @@ AND table_name = 'moe_banlist';
         $cmdCheckTable = New-Object MySql.Data.MySqlClient.MySqlCommand($sqlCheckTable, $Connection)
         $tableExists = $cmdCheckTable.ExecuteScalar()
         if ($tableExists -eq 0) {
+            # You have to add a ban first to create the table
+            # just for you @Sibercat
             Write-Host "Table moe_banlist does not exist. Skipping BanList Check. Please re-read documentation!"
             return
         }
@@ -949,7 +951,7 @@ AND table_name = 'moe_banlist';
             $unbanTimeStr = $reader["UnbanTime"]
             $currentTime = Get-Date
 
-            if ($currentTime -gt $unbanTime) {
+            if ($currentTime -lt $unbanTime) {
                 # Unban time has passed, delete the entry and run the unban command
                 $reader.Close()
                 $sqlDelete = "DELETE FROM moe_banlist WHERE steamid = '$steamID'"
