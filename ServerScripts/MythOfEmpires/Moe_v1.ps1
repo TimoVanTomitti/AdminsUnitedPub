@@ -752,12 +752,12 @@ function StartCluster {
             # BAttlefield Argument List
             $battleServer = $serverConfig[$key]
             $battleMap = $($battleServer["BattleMap"] -replace '^\d+_', '')
-            $battlefieldArgumentLine = "$($battlemap) -game -server -ClusterId=$($clusterID) -DataStore " + `
+            $battlefieldArgumentLine = "$($battlemap) -game -server -ClusterId=$($clusterID) " + `
             "-log -StartBattleService -StartPubData -BigPrivateServer -DistrictId=1 -EnableParallelTickFunction -DisablePhysXSimulation " + `
-            "-LOCALLOGTIMES -corelimit=5 -core -HangDuration=300 -NotCheckServerSteamAuth " + `
+            "-LOCALLOGTIMES -corelimit=5 -core -HangDuration=300 -NotCheckServerSteamAuth -ActivityServer=true " + `
             "-MultiHome=$($battleServer["BattleInnerAddr"]) -OutAddress=$($battleServer["BattleOuterAddr"]) -Port=$($battleServer["BattleGamePort"]) " + `
             "-QueryPort=$($battleServer["BattleQueryPort"]) -ShutDownServicePort=$($battleServer["BattleClosePort"]) -ShutDownServiceIP=$($battleServer["BattleRemoteAddr"]) -ShutDownServiceKey=$($battleServer["BattleRemotePassword"]) " + `
-            "-MaxPlayers=$($battleServer["BattleMaxPlayers"]) -SessionName=battlefield_$($battleServer["BattleID"]) -ServerId=$($battleServer["BattleID"]) log=BattleServer_$($battleServer["BattleID"]).log " + `
+            "-MaxPlayers=$($battleServer["BattleMaxPlayers"]) -SessionName=battle$($battleServer["BattleID"]) -ServerId=$($battleServer["BattleID"]) log=BattleServer_$($battleServer["BattleID"]).log " + `
             "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) -DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + `
             "-BattleAddr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -BattlePort=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + `
             "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
@@ -781,7 +781,10 @@ function StartCluster {
             # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
             # as the Enter Server notice. So we are just going to do a fun check now. 
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
-                $battlefieldArgumentLine += "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
+                $battlefieldArgumentLine += " -NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
+            }
+            if (!($battleMap -like "CountyTown_Main")) {
+                $battlefieldArgumentLine += " -ActivityServer=True"
             }
             <# DONT NEED THIS JUNK
             # Same thing for Description
