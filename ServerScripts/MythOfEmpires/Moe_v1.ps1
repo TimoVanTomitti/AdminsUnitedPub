@@ -687,7 +687,7 @@ function StartCluster {
             "-GameServerPVPType=$($sceneServer["ScenePVPType"]) -MultiHome=$($privateIP) -OutAddress=$($publicIP) " + `
             "-Port=$($sceneServer["SceneGamePort"]) -QueryPort=$($sceneServer["SceneQueryPort"]) -ShutDownServicePort=$($sceneServer["SceneClosePort"]) " + `
             "-ShutDownServiceIP=$($sceneServer["SceneRemoteAddr"]) -ShutDownServiceKey=$($sceneServer["SceneRemotePassword"]) " + `
-            "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -SessionName=SceneServer_$($sceneServer["SceneID"]) -ServerId=$($sceneServer["SceneID"]) log=SceneServer_$($sceneServer["SceneID"]).log " + `
+            "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -SessionName=Scene$($sceneServer["SceneID"]) -ServerId=$($sceneServer["SceneID"]) log=SceneServer_$($sceneServer["SceneID"]).log " + `
             "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) " + `
             "-DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + `
             "-BattleAddr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -BattlePort=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + `
