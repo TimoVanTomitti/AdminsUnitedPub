@@ -714,10 +714,12 @@ function StartCluster {
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
                 $gridArgumentLine += " -NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
             }
+            <# DONT NEED THIS
             # Same thing for Description
             if ($($serverConfig["BaseServerConfig"]["Description"])) {
                 $gridArgumentLine += " -Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
             }
+            #> 
             # Append generalized arguments
             $gridArgumentLine += $generalizedArguments
             # Add Custom Arguments
@@ -781,11 +783,12 @@ function StartCluster {
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
                 $battlefieldArgumentLine += "-NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
             }
+            <# DONT NEED THIS JUNK
             # Same thing for Description
             if ($($serverConfig["BaseServerConfig"]["Description"])) {
                 $battlefieldArgumentLine += "-Description=`"$($serverConfig["BaseServerConfig"]["Description"])`" "
             }
-            
+            #>
             $serverCheck = $null
             $battlefieldPIDPath = Join-Path $pidPath "bf-$($battleServer["BattleID"]).pid"
             if (Test-Path $battlefieldPIDPath) {
