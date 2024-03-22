@@ -43,9 +43,9 @@ Param (
     $scriptPath = "",           # This is where you plan to put your script. its a fallback incase something breaks. 
     $privateIP = "",            # This is your private ip. Use IPCONFIG to get
     $publicIP = "",             # This is your Public IP, Use IPCHICKEN.COM
-    $clusterID = 8888,          # Leave this as default. Only change if you are running multiple clusters.
-    $option = "",               # StartCluster, ShutdownCluster,RestartCluster,UpdateCluster,Help
-    $enableMySQL = "true",      # Turn on MYSQL Access -> Do this is you used MariaDB
+    $clusterID = 8888,   
+	$option = "",               # StartCluster, ShutdownCluster,RestartCluster,UpdateCluster,Help
+    $enableMySQL = "false",      # Turn on MYSQL Access -> Do this is you used MariaDB
     $enableDiscord = "false",   # Turn on Discord Functions. See Requirements at top
     $discordSecret = "",        # Required for Discord Functions
     $autoprocess = "true",      # Enables loop for auto-restarts and updates
@@ -166,12 +166,12 @@ Try {
 # rerun this script to fix any failures if something happens to crash
 # we can also use the pids for quick checking of other features
 function StartServer {
-    param ($serverPath, $argumentLine, $pidPath)
+    param ($serverPath, $argumentLine, $pidPath, $name)
 
     Try {
-        $process = Start-Process $serverPath $argumentLIne -PassThru -ErrorAction Stop
+        $process = Start-Process $serverPath $argumentLIne -PassThru -ErrorAction Stop -WindowStyle Minimized
         $process.Id | Out-File $pidPath
-        Write-Host "Successfully Started $($serverPath) with PID: $($process.Id)"
+        Write-Host "Successfully Started $($name) at $($serverPath) with PID: $($process.Id)"
     } Catch {
         Write-Error "Failed to Start the server: $_"
     }
@@ -285,7 +285,7 @@ function StartCluster {
     "-NotCheckServerSteamAuth -MultiHome=$($privateIP) -OutAddress=$($publicIP) -Port=$($serverConfig["PubDataServerInfo"]["PubDataGamePort"]) " + `
     "-QueryPort=$($serverConfig["PubDataServerInfo"]["PubDataQueryPort"]) -ShutDownServicePort=$($serverConfig["PubDataServerInfo"]["PubDataClosePort"]) " + `
     "-ShutDownServiceIP=$($serverConfig["PubDataServerInfo"]["PubDataRemoteAddr"]) -ShutDownServiceKey=$($serverConfig["PubDataServerInfo"]["PubDataRemotePassword"]) " + ` 
-    "-SessionName=PubDataServer_90000 -ServerId=$($serverConfig["PubDataServerInfo"]["PubDataServerID"]) log=PubDataServer_90000.log " + `
+    "-SessionName=$($serverConfig["LobbyServerInfo"]["ServerListName"])_PubData_$($serverConfig["PubDataServerInfo"]["PubDataServerID"]) -ServerId=$($serverConfig["PubDataServerInfo"]["PubDataServerID"]) log=PubDataServer_90000.log " + `
     "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) " + ` 
     "-DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + ` 
     "-BattleAddr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -BattlePort=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + ` 
@@ -311,7 +311,8 @@ function StartCluster {
     Try {
         $serverCheck = Get-Process -id $pubAppID -ErrorAction Stop
     } Catch {
-        StartServer $gamePath $pubServerArgumentLine $pubPIDPath
+        $pubServerName = "$($serverConfig["LobbyServerInfo"]["ServerListName"])_PubData_$($serverConfig["PubDataServerInfo"]["PubDataServerID"])"
+        StartServer $gamePath $pubServerArgumentLine $pubPIDPath $pubServerName
     } 
 
     ## Chat Service Server
@@ -334,7 +335,8 @@ function StartCluster {
     Try {
         $serverCheck = Get-Process -id $chatAppID -ErrorAction Stop
     } Catch {
-        StartServer $chatPath $chatServiceArgumentLine $chatPIDPath
+        $chatServerName = "Chat Server"
+        StartServer $chatPath $chatServiceArgumentLine $chatPIDPath $pubServerName
     }
 
     ## Opt Service Server
@@ -368,7 +370,7 @@ function StartCluster {
     Try {
         $serverCheck = Get-Process -id $optAppID -ErrorAction Stop
     } Catch {
-        StartServer $optPath $optArgumentLine $optPIDPath
+        StartServer $optPath $optArgumentLine $optPIDPath 'Opt Server'
     }
 
     ## Lobby Service Server
@@ -419,7 +421,7 @@ function StartCluster {
     Try {
         $serverCheck = Get-Process -id $lobbyAppID -ErrorAction Stop
     } Catch {
-        StartServer $gamePath $lobbyArgumentLine $lobbyPIDPath
+        StartServer $gamePath $lobbyArgumentLine $lobbyPIDPath 'Lobby'
     }
 
 
@@ -679,6 +681,13 @@ function StartCluster {
     Foreach ($key in $serverConfig.Keys) {
         if ($key -match "^SceneServerList_\d+$") {
             $sceneServer = $serverConfig[$key]
+
+            if ($($sceneServer["ScenePVPType"]) -eq "1") { # PVE
+                $pvType = "PVE"
+            } else {
+                $pvType = "PVP"
+            }
+            $sceneServerName = "$($serverConfig["LobbyServerInfo"]["ServerListName"])_Scene_$($pvType)_$($sceneServer["SceneID"]) -ServerId=$($sceneServer["SceneID"])";
             # Construct the base argument line for each grid
             $gridArgumentLine = "$($sceneServer["SceneMap"]) -game -server -ClusterId=$clusterID -DataStore " + `
             "-log -StartBattleService -StartPubData -BigPrivateServer -DistrictId=1 -EnableParallelTickFunction -DisablePhysXSimulation -LOCALLOGTIMES " + `
@@ -687,7 +696,7 @@ function StartCluster {
             "-GameServerPVPType=$($sceneServer["ScenePVPType"]) -MultiHome=$($privateIP) -OutAddress=$($publicIP) " + `
             "-Port=$($sceneServer["SceneGamePort"]) -QueryPort=$($sceneServer["SceneQueryPort"]) -ShutDownServicePort=$($sceneServer["SceneClosePort"]) " + `
             "-ShutDownServiceIP=$($sceneServer["SceneRemoteAddr"]) -ShutDownServiceKey=$($sceneServer["SceneRemotePassword"]) " + `
-            "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -SessionName=Scene$($sceneServer["SceneID"]) -ServerId=$($sceneServer["SceneID"]) log=SceneServer_$($sceneServer["SceneID"]).log " + `
+            "-MaxPlayers=$($serverConfig["BaseServerConfig"]["MaxPlayers"]) -SessionName=$($sceneServerName) -ServerId=$($sceneServer["SceneID"]) log=SceneServer_$($sceneServer["SceneID"]).log " + `
             "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) " + `
             "-DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + `
             "-BattleAddr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -BattlePort=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + `
@@ -711,8 +720,10 @@ function StartCluster {
             }
             # Something weird happened here. if NoticeSelfEnterServer is blank in the config, for some reason it just feeds the next argument
             # as the Enter Server notice. So we are just going to do a fun check now. 
+            $rebootTimeString = (Get-Date).AddHours($restartTime).ToString('MM/dd/yyyy HH:mm:ss')
+            $rebootTime = [DateTime]::ParseExact($rebootTimeString, 'MM/dd/yyyy HH:mm:ss', $null)
             if ($($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])) {
-                $gridArgumentLine += " -NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"])`" "
+                $gridArgumentLine += " -NoticeSelfEnterServer=`"$($serverConfig["BaseServerConfig"]["NoticeSelfEnterServer"]) Reboot um $($rebootTime)`" "
             }
             <# DONT NEED THIS
             # Same thing for Description
@@ -741,7 +752,7 @@ function StartCluster {
             Try {
                 $serverCheck = Get-Process -id $sceneAppID -ErrorAction Stop
             } Catch {
-                StartServer $gamePath $gridArgumentLine $scenePIDPath
+                StartServer $gamePath $gridArgumentLine $scenePIDPath $sceneServerName
             }
             Start-Sleep -s 10
         }
@@ -752,12 +763,13 @@ function StartCluster {
             # BAttlefield Argument List
             $battleServer = $serverConfig[$key]
             $battleMap = $($battleServer["BattleMap"] -replace '^\d+_', '')
+            $battleServerName = "$($serverConfig["LobbyServerInfo"]["ServerListName"])_battle_$($battleServer["BattleID"])"
             $battlefieldArgumentLine = "$($battlemap) -game -server -ClusterId=$($clusterID) " + `
             "-log -StartBattleService -StartPubData -BigPrivateServer -DistrictId=1 -EnableParallelTickFunction -DisablePhysXSimulation " + `
             "-LOCALLOGTIMES -corelimit=5 -core -HangDuration=300 -NotCheckServerSteamAuth -ActivityServer=true " + `
             "-MultiHome=$($battleServer["BattleInnerAddr"]) -OutAddress=$($battleServer["BattleOuterAddr"]) -Port=$($battleServer["BattleGamePort"]) " + `
             "-QueryPort=$($battleServer["BattleQueryPort"]) -ShutDownServicePort=$($battleServer["BattleClosePort"]) -ShutDownServiceIP=$($battleServer["BattleRemoteAddr"]) -ShutDownServiceKey=$($battleServer["BattleRemotePassword"]) " + `
-            "-MaxPlayers=$($battleServer["BattleMaxPlayers"]) -SessionName=battle$($battleServer["BattleID"]) -ServerId=$($battleServer["BattleID"]) log=BattleServer_$($battleServer["BattleID"]).log " + `
+            "-MaxPlayers=$($battleServer["BattleMaxPlayers"]) -SessionName=$($battleServerName) -ServerId=$($battleServer["BattleID"]) log=BattleServer_$($battleServer["BattleID"]).log " + `
             "-PubDataAddr=$($serverConfig["PubDataServerInfo"]["PubDataAddr"]) -PubDataPort=$($serverConfig["PubDataServerInfo"]["PubDataPort"]) -DBAddr=$($serverConfig["AroundServerInfo"]["DBStoreAddr"]) -DBPort=$($serverConfig["AroundServerInfo"]["DBStorePort"]) " + `
             "-BattleAddr=$($serverConfig["AroundServerInfo"]["BattleManagerAddr"]) -BattlePort=$($serverConfig["AroundServerInfo"]["BattleManagerPort"]) " + `
             "-ChatServerAddr=$($serverConfig["AroundServerInfo"]["ChatServerAddr"]) -ChatServerPort=$($serverConfig["AroundServerInfo"]["ChatServerPort"]) " + `
@@ -800,11 +812,11 @@ function StartCluster {
                     Write-Host "Checking $($battlefieldPIDPath)"
                     $serverCheck = Get-Process -id $battlefieldAppID -ErrorAction Stop
                 } Catch {
-                    StartServer $gamePath $battlefieldArgumentLIne $battlefieldPIDPath
+                    StartServer $gamePath $battlefieldArgumentLIne $battlefieldPIDPath $battleServerName
                 }
             } Else {
                 # PID Doesn't exist so just start it
-                StartServer $gamePath $battlefieldArgumentLIne $battlefieldPIDPath
+                StartServer $gamePath $battlefieldArgumentLIne $battlefieldPIDPath $battleServerName
             }
         }
     }
