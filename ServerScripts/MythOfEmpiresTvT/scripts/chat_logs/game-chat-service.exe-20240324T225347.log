@@ -1,0 +1,1 @@
+{"err":"dial tcp 127.0.0.1:6379: connectex: No connection could be made because the target machine actively refused it.","key":"chat:g:id","level":"error","msg":"SMembres: retrieve group ids failed","time":"2024-03-24T22:53:47+01:00"}

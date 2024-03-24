@@ -1,0 +1,6 @@
+[INFO][opt_sys.go:109]2024/03/24 22:53:39 [当前版本号: 1.0.0.1  发布日期: 2024-03-07   17:26:42]
+[INFO][watch.go:29]2024/03/24 22:53:39 [--- run watch web client success, addr: 127.0.0.1:53425]
+[INFO][web.go:89]2024/03/24 22:53:39 [run client web server  192.168.178.50:8090]
+[INFO][model.go:87]2024/03/24 22:53:39 [add service name: MarketService  id: 127.0.0.1:53424  remote addr: 127.0.0.1]
+[INFO][reg_client.go:68]2024/03/24 22:53:39 [Register service  MarketService  success, id: 127.0.0.1:53424  bwrite: true]
+[INFO][market_service.go:48]2024/03/24 22:53:39 [reg service: MarketService]
